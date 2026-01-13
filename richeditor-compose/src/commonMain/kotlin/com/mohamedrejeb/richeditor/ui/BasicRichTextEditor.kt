@@ -98,7 +98,8 @@ public fun BasicRichTextEditor(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     cursorBrush: Brush = SolidColor(Color.Black),
     decorationBox: @Composable (innerTextField: @Composable () -> Unit) -> Unit =
-        @Composable { innerTextField -> innerTextField() }
+        @Composable { innerTextField -> innerTextField() },
+    disableSelectionToolbar: Boolean = false
 ) {
     BasicRichTextEditor(
         state = state,
@@ -116,7 +117,8 @@ public fun BasicRichTextEditor(
         interactionSource = interactionSource,
         cursorBrush = cursorBrush,
         decorationBox = decorationBox,
-        contentPadding = PaddingValues()
+        contentPadding = PaddingValues(),
+        disableSelectionToolbar = disableSelectionToolbar
     )
 }
 
@@ -192,7 +194,8 @@ public fun BasicRichTextEditor(
     cursorBrush: Brush = SolidColor(Color.Black),
     decorationBox: @Composable (innerTextField: @Composable () -> Unit) -> Unit =
         @Composable { innerTextField -> innerTextField() },
-    contentPadding: PaddingValues
+    contentPadding: PaddingValues,
+    disableSelectionToolbar: Boolean = false
 ) {
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
@@ -229,7 +232,8 @@ public fun BasicRichTextEditor(
         }
     }
 
-    CompositionLocalProvider(LocalClipboardManager provides richClipboardManager) {
+    val fieldContent: @Composable () -> Unit = {
+        CompositionLocalProvider(LocalClipboardManager provides richClipboardManager) {
         BasicTextField(
             value = state.textFieldValue,
             onValueChange = {
@@ -291,6 +295,16 @@ public fun BasicRichTextEditor(
             cursorBrush = cursorBrush,
             decorationBox = decorationBox,
         )
+            }
+        }
+    }
+
+    if (disableSelectionToolbar) {
+        CompositionLocalProvider(LocalTextToolbar provides NoOpTextToolbar) {
+            fieldContent()
+        }
+    } else {
+        fieldContent()
     }
 }
 

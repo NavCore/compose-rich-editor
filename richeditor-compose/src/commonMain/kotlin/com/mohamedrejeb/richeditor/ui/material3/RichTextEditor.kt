@@ -109,6 +109,7 @@ public fun RichTextEditor(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     shape: Shape = RichTextEditorDefaults.filledShape,
     colors: RichTextEditorColors = RichTextEditorDefaults.richTextEditorColors(),
+    disableSelectionToolbar: Boolean = false,
     contentPadding: PaddingValues =
         if (label == null) {
             RichTextEditorDefaults.richTextEditorWithoutLabelPadding()
@@ -142,6 +143,7 @@ public fun RichTextEditor(
             onTextLayout = onTextLayout,
             interactionSource = interactionSource,
             cursorBrush = SolidColor(colors.cursorColor(isError).value),
+            disableSelectionToolbar = disableSelectionToolbar,
             decorationBox = @Composable { innerTextField ->
                 // places leading icon, text field with label and placeholder, trailing icon
                 RichTextEditorDefaults.RichTextEditorDecorationBox(

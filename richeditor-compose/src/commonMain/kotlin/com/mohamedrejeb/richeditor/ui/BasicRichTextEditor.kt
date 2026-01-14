@@ -232,9 +232,9 @@ public fun BasicRichTextEditor(
         }
     }
 
-    val fieldContent: @Composable () -> Unit = {
-        CompositionLocalProvider(LocalClipboardManager provides richClipboardManager) {
-        BasicTextField(
+CompositionLocalProvider(LocalClipboardManager provides richClipboardManager) {
+        ProvideNoSelectionToolbar(disableSelectionToolbar = disableSelectionToolbar) {
+            BasicTextField(
             value = state.textFieldValue,
             onValueChange = {
                 if (readOnly) return@BasicTextField
@@ -295,16 +295,8 @@ public fun BasicRichTextEditor(
             cursorBrush = cursorBrush,
             decorationBox = decorationBox,
         )
-            }
-        }
-    }
 
-    if (disableSelectionToolbar) {
-        CompositionLocalProvider(LocalTextToolbar provides NoOpTextToolbar) {
-            fieldContent()
         }
-    } else {
-        fieldContent()
     }
 }
 

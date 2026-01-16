@@ -1,5 +1,7 @@
 package com.mohamedrejeb.richeditor.ui
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -10,15 +12,19 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -243,6 +249,8 @@ public fun BasicRichTextEditor(
                     state.onTextFieldValueChange(it)
                 },
                 modifier = modifier
+                    .blockDoubleTapSelection(disableSelectionToolbar)
+                    .blockLongPressSelection(disableSelectionToolbar)
                     .onPreviewKeyEvent { event ->
                         if (readOnly)
                             return@onPreviewKeyEvent false
@@ -323,3 +331,84 @@ internal suspend fun adjustTextIndicatorOffset(
 }
 
 public typealias RichTextChangedListener = (RichTextState) -> Unit
+
+private fun Modifier.blockLongPressSelection(enabled: Boolean): Modifier = composed {
+    if (!enabled) return@composed this
+
+    val viewConfig = LocalViewConfiguration.current
+    val longPressMs = viewConfig.longPressTimeoutMillis
+
+    this.pointerInput(longPressMs) {
+        awaitEachGesture {
+            // 1) Pusti "down" da prođe (tap/fokus/kursor mora raditi)
+            val down = awaitFirstDown(requireUnconsumed = false)
+            val start = down.uptimeMillis
+
+            var longPressTriggered = false
+
+            // 2) Prati evente dok je prst dole
+            while (true) {
+                val event = awaitPointerEvent()
+
+                val anyPressed = event.changes.any { it.pressed }
+                if (!anyPressed) break
+
+                val now = event.changes.maxOfOrNull { it.uptimeMillis } ?: start
+                if (!longPressTriggered && (now - start) >= longPressMs) {
+                    // ✅ Long-press moment: od ovog trenutka "pojedemo" gesture
+                    // (sprečava selection pipeline i toolbar)
+                    longPressTriggered = true
+                    event.changes.forEach { it.consume() }
+                }
+
+                if (longPressTriggered) {
+                    // nakon long-pressa nastavi gutati sve (drag/handles ne kreću)
+                    event.changes.forEach { it.consume() }
+                }
+            }
+        }
+    }
+}
+
+private fun Modifier.blockDoubleTapSelection(enabled: Boolean): Modifier = composed {
+    if (!enabled) return@composed this
+
+    // “double tap” prag (ms). 250ms je standardno dovoljno.
+    val doubleTapMs = 250L
+
+    this.pointerInput(doubleTapMs) {
+        var lastDownUptime = 0L
+
+        awaitEachGesture {
+            // čekamo eventove u ovoj gesti
+            while (true) {
+                val event = awaitPointerEvent()
+
+                // nađi promjenu koja je upravo postala "down"
+                val down = event.changes.firstOrNull { it.changedToDownIgnoreConsumed() }
+                if (down != null) {
+                    val now = down.uptimeMillis
+                    val isDoubleTap = lastDownUptime != 0L && (now - lastDownUptime) <= doubleTapMs
+
+                    lastDownUptime = now
+
+                    if (isDoubleTap) {
+                        // ✅ Ovo je drugi tap: pojedi ga da Compose ne pokrene "select word" pipeline
+                        down.consume()
+
+                        // i pojedi sve dok se ne pusti prst (da ne krene selection drag)
+                        while (true) {
+                            val e2 = awaitPointerEvent()
+                            e2.changes.forEach { it.consume() }
+                            if (e2.changes.none { it.pressed }) break
+                        }
+                        break
+                    }
+                }
+
+                // završi gestu kad nema više pressed
+                if (event.changes.none { it.pressed }) break
+            }
+        }
+    }
+}

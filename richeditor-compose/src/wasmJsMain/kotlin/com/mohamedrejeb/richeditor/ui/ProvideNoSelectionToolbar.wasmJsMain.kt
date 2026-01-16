@@ -8,5 +8,7 @@ internal actual fun ProvideNoSelectionToolbar(
     content: @Composable () -> Unit,
 ) {
     // No platform selection toolbar (ActionMode) available on this target.
+    @Suppress("UNUSED_VARIABLE")
+    val unused = disableSelectionToolbar
     content()
 }

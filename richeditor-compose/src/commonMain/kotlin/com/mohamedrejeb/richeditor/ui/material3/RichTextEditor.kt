@@ -90,6 +90,8 @@ import kotlin.math.roundToInt
 public fun RichTextEditor(
     state: RichTextState,
     modifier: Modifier = Modifier,
+    minHeight: Dp = TextFieldDefaults.MinHeight,
+    maxHeight: Dp = Dp.Unspecified,
     enabled: Boolean = true,
     readOnly: Boolean = false,
     textStyle: TextStyle = LocalTextStyle.current,
@@ -127,9 +129,10 @@ public fun RichTextEditor(
         BasicRichTextEditor(
             state = state,
             modifier = modifier
+                .heightIn(min = minHeight, max = maxHeight)
                 .defaultMinSize(
                     minWidth = TextFieldDefaults.MinWidth,
-                    minHeight = TextFieldDefaults.MinHeight
+                    minHeight = Dp.Unspecified
                 ),
             enabled = enabled,
             readOnly = readOnly,

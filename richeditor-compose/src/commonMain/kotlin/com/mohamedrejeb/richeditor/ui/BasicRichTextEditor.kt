@@ -7,11 +7,15 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.composed
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.Offset
@@ -91,6 +95,8 @@ import kotlinx.coroutines.CoroutineScope
 public fun BasicRichTextEditor(
     state: RichTextState,
     modifier: Modifier = Modifier,
+    minHeight: Dp = TextFieldDefaults.MinHeight,
+    maxHeight: Dp = Dp.Unspecified,
     enabled: Boolean = true,
     readOnly: Boolean = false,
     textStyle: TextStyle = TextStyle.Default,
@@ -109,7 +115,12 @@ public fun BasicRichTextEditor(
 ) {
     BasicRichTextEditor(
         state = state,
-        modifier = modifier,
+        modifier = modifier
+            .heightIn(min = minHeight, max = maxHeight)
+            .defaultMinSize(
+                minWidth = TextFieldDefaults.MinWidth,
+                minHeight = Dp.Unspecified
+            ),
         enabled = enabled,
         readOnly = readOnly,
         textStyle = textStyle,
